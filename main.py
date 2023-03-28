@@ -64,7 +64,7 @@ def second_page(link):
     print(link)
     r1 = requests.get(link, headers=headers)
     if r1.status_code == 200:
-        soup1 = bs(r1.content, features='lxml')
+        soup1 = bs(r1.content, features='html.parser')
         #About the song:
         global about 
         try:
