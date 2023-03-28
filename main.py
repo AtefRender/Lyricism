@@ -112,7 +112,7 @@ def second_page(link):
 def tbot():
     @bot.message_handler(commands=['start'])
     def start(message):
-        smsg = "Hey, I am LyricsG Bot\nSend me the name of the song and I will get its lyrics for you <3\n(You can send with artist name for more accuarcy)."
+        smsg = "Lyricism is UP!\nSend me name of a song and I will get its lyrics for you <3\n(You can send with artist name for more accuarcy)."
         bot.reply_to(message, smsg)
         print(str(message.chat.username) + " start")
 
