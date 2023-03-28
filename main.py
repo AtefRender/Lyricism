@@ -137,15 +137,13 @@ def tbot():
         markup.add(types.InlineKeyboardButton(text='Close', callback_data='result_no'))
         #More info kb:
         global keyboard
-        keyboard = types.InlineKeyboardMarkup()
         button0 = types.InlineKeyboardButton(text='About the song', callback_data='click0')
         button1 = types.InlineKeyboardButton(text='Album tracklist', callback_data='click1')
         button2 = types.InlineKeyboardButton(text='Translation (beta)', callback_data='click2')
         button3 = types.InlineKeyboardButton(text='Done', callback_data='click3')
-        keyboard.add(button0, button1, button2, button3)
+        keyboard = types.InlineKeyboardMarkup([[button0, button1, button2], [button3]])
         global long_keyboard
-        long_keyboard = types.InlineKeyboardMarkup()
-        long_keyboard.add(button0, button1, button3)
+        long_keyboard = types.InlineKeyboardMarkup([[button0, button1], [button3]])
         if results_counter != 0:
             bot.reply_to(message, 'Choose your song:', reply_markup=markup)
         else:
@@ -229,13 +227,13 @@ def tbot():
             if call.data == 'click1':
                 bot.send_message(chat_id=call.message.chat.id, text='Album tracklist:\n' + album)
             if call.data == 'click2':
-                kb_tanslate = types.InlineKeyboardMarkup()
+                global kb_tanslate
                 button2_1 = types.InlineKeyboardButton(text='Translate to English', callback_data='click2_1')
                 button2_2 = types.InlineKeyboardButton(text='Translate to Arabic', callback_data='click2_2')
                 button2_3 = types.InlineKeyboardButton(text='Translate to French', callback_data='click2_3')
                 button2_4 = types.InlineKeyboardButton(text='Translate to Spanish', callback_data='click2_4')
                 button2_0 = types.InlineKeyboardButton(text='Go back', callback_data='click2_0')
-                kb_tanslate.add(button2_1, button2_2, button2_3, button2_4, button2_0)
+                kb_tanslate = types.InlineKeyboardMarkup([[button2_1, button2_2], [button2_3, button2_4], [button2_0]])
                 bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=lyricsfr, reply_markup=kb_tanslate)
             translator = Translator()
             if call.data == 'click2_1':
