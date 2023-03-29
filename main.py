@@ -13,8 +13,14 @@ headers = {
     'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
     }
 
+headers_ar = {
+    'referer': 'https://kalimat.anghami.com/',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+}
+
 API_KEY = os.environ.get('API_KEY')
 BASE = os.environ.get('BASE')
+BASE_AR = os.environ.get('BASE_AR')
 CHATID = os.environ.get('CHATID')
 bot = telebot.TeleBot(API_KEY)
 
@@ -24,6 +30,10 @@ file = []
 def get_url(name):
     url = BASE + name.replace(" ", "%20")
     return url
+
+def get_url_ar(name_ar):
+    url_ar = BASE_AR + name_ar
+    return url_ar
 
 def first_page(name):
     #first page:
@@ -49,8 +59,7 @@ def first_page(name):
             links.append(link)
             searchq.append(info)
             photos.append(photo)
-        if results_counter == 0:
-            return "Sorry, no matches :)"
+
         
         print(searchq)
         
@@ -99,7 +108,6 @@ def second_page(link):
         except:
             if lyrics_raw == None:
                 lyrics_raw = soup1.find('div', 'LyricsPlaceholder__Message-uen8er-3 jlYyFx')
-        print(lyrics_raw)
         lyrics_fixed = str(lyrics_raw).replace('<br/>', '\n')
         convert = bs(lyrics_fixed, features='html.parser')
         lyrics = convert.text
@@ -108,7 +116,61 @@ def second_page(link):
     else:
         print("Server error")
         return "Sorry, Server error :)"
+
+def AR(url_ar):
+    r_ar = requests.post(url_ar, headers=headers_ar)
+    data_ar = r_ar.text
+    parsed_json_ar = json.loads(data_ar)
+    global ar_counter
+    ar_counter = parsed_json_ar['sections'][0]['count']
+    if ar_counter <= 5 and ar_counter != 0:
+        ar_counter = ar_counter-1
+    if ar_counter > 5:
+        ar_counter = 0
+        for x in range(5):
+            try:
+                if parsed_json_ar['sections'][0]['data'][x]['arabictext'] == 1:
+                    ar_counter += 1
+            except:
+                pass
+        if ar_counter != 0:
+            ar_counter -= 1
         
+    global songIds, infos_ar, picIds
+    songIds = []
+    infos_ar = []
+    picIds = []
+    if ar_counter != 0:
+        for x in range(ar_counter+1):
+            try:
+                if parsed_json_ar['sections'][0]['data'][x]['is_podcast'] == 1:
+                    pass
+            except:
+                try:
+                    if parsed_json_ar['sections'][0]['data'][x]['arabictext'] == 1:
+                        songId = parsed_json_ar['sections'][0]['data'][x]['id']
+                        artist = parsed_json_ar['sections'][0]['data'][x]['artist']
+                        title = parsed_json_ar['sections'][0]['data'][x]['title']
+                        picId = parsed_json_ar['sections'][0]['data'][x]['coverArt']
+                        songIds.append(songId)
+                        infos_ar.append(title + ' - ' + artist)
+                        picIds.append(picId)
+                except:
+                    pass
+    else:
+        pass
+
+def AR1(sId, pId, infos):
+    pic_url = 'https://angartwork.anghcdn.co/?id=' + pId
+    lyrics_url = 'https://kalimat.anghami.com/lyrics/' + sId
+    ar_lyrics_req = requests.get(lyrics_url, headers=headers)
+    soup_ar = bs(ar_lyrics_req.content, 'html.parser')
+    try:
+        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('pre', class_='lyrics-body_lyrics_body_container__e_Gwj').text
+    except:
+        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('h4', class_='error-page_error_page_subtitle__3REFJ').text
+    return ar_lryics, pic_url
+
 def tbot():
     @bot.message_handler(commands=['start'])
     def start(message):
@@ -119,6 +181,8 @@ def tbot():
     @bot.message_handler()
     def reply(message):
         name = message.text
+        global name_ar
+        name_ar = message.text
         print(str(message.chat.username) + ' - ' + name)
         first_page(name)
         userId = message.chat.id
@@ -130,11 +194,16 @@ def tbot():
         bot.send_message(chat_id=CHATID, text=data)
         #Serch kb:
         markup = types.InlineKeyboardMarkup()
+        close_button = types.InlineKeyboardButton(text='Close', callback_data='result_no')
+        ar_button = types.InlineKeyboardButton(text='ابحث عن أغانٍ عربية', callback_data='ar_result')
+        nmarkup = types.InlineKeyboardMarkup([[ar_button], [close_button]])
         count = 0
         for value in searchq:
             markup.add(types.InlineKeyboardButton(text=value,callback_data='result'+str(count)))
             count += 1
-        markup.add(types.InlineKeyboardButton(text='Close', callback_data='result_no'))
+        markup.add(ar_button)
+        markup.add(close_button)
+
         #More info kb:
         global keyboard
         button0 = types.InlineKeyboardButton(text='About the song', callback_data='click0')
@@ -143,16 +212,85 @@ def tbot():
         button3 = types.InlineKeyboardButton(text='Done', callback_data='click3')
         keyboard = types.InlineKeyboardMarkup([[button0, button1, button2], [button3]])
         global long_keyboard
-        long_keyboard = types.InlineKeyboardMarkup([[button0, button1], [button3]])
+        long_keyboard = types.InlineKeyboardMarkup()
+        long_keyboard.add(button0, button1, button3)
         if results_counter != 0:
             bot.reply_to(message, 'Choose your song:', reply_markup=markup)
         else:
-            bot.reply_to(message, 'Sorry, no matches :)')
+            bot.reply_to(message, 'Sorry, no matches.', reply_markup=nmarkup)
 
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback_data(call):
         if call.message:
+            if call.data == 'ar_result':
+                #Ar_search kb:
+                AR(get_url_ar(name_ar))
+                if ar_counter == 0:
+                    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                    bot.send_message(chat_id=call.message.chat.id, text='عذراً، لم يتم العثور على نتائج')
+                else:
+                    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                    ar_markup = types.InlineKeyboardMarkup()
+                    counter = 0
+                    for value in infos_ar:
+                        ar_markup.add(types.InlineKeyboardButton(text=value,callback_data='ar_result'+str(counter)))
+                        counter += 1
+                    ar_markup.add(types.InlineKeyboardButton(text='إغلاق', callback_data='result_no'))
+                    print(ar_counter)
+                    bot.send_message(chat_id=call.message.chat.id, text='اختر الأغنية:', reply_markup=ar_markup)
+
+            if call.data == 'ar_result0':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                ar_lyrics, pic = AR1(songIds[0], picIds[0], infos_ar[0])
+                bot.send_photo(chat_id=call.message.chat.id, photo=pic)
+                if len(ar_lyrics) > 4096:
+                    for x in range(0, len(ar_lyrics), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics[x:x+4096])
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
+
+            if call.data == 'ar_result1':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                ar_lyrics, pic = AR1(songIds[1], picIds[1], infos_ar[1])
+                bot.send_photo(chat_id=call.message.chat.id, photo=pic)
+                if len(ar_lyrics) > 4096:
+                    for x in range(0, len(ar_lyrics), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics[x:x+4096])
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
+            
+            if call.data == 'ar_result2':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                ar_lyrics, pic = AR1(songIds[2], picIds[2], infos_ar[2])
+                bot.send_photo(chat_id=call.message.chat.id, photo=pic)
+                if len(ar_lyrics) > 4096:
+                    for x in range(0, len(ar_lyrics), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics[x:x+4096])
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
+            
+            if call.data == 'ar_result3':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                ar_lyrics, pic = AR1(songIds[3], picIds[3], infos_ar[3])
+                bot.send_photo(chat_id=call.message.chat.id, photo=pic)
+                if len(ar_lyrics) > 4096:
+                    for x in range(0, len(ar_lyrics), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics[x:x+4096])
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
+            
+            if call.data == 'ar_result4':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                ar_lyrics, pic = AR1(songIds[4], picIds[4], infos_ar[4])
+                bot.send_photo(chat_id=call.message.chat.id, photo=pic)
+                if len(ar_lyrics) > 4096:
+                    for x in range(0, len(ar_lyrics), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics[x:x+4096])
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
+            
+
             global lyricsfr
             if call.data == 'result_no':
                 bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
@@ -255,6 +393,7 @@ def tbot():
                     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
                 else:
                     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=lyricsfr)
+                    
     print('Bot is running...')
     bot.infinity_polling()
 
