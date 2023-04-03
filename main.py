@@ -24,7 +24,6 @@ CHATID = os.environ.get('CHATID')
 bot = telebot.TeleBot(API_KEY)
 
 server()
-file = []
 
 def get_url(name):
     url = BASE + name.replace(" ", "%20")
@@ -35,19 +34,13 @@ def get_url_ar(name_ar):
     return url_ar
 
 def first_page(name):
-    #first page:
     r = requests.get(get_url(name), headers=headers)
     if r.status_code == 200:
         soup = bs(r.content, features='html.parser')
         data = soup.text
         parsed_json = json.loads(data)
-        global searchq
-        global links
-        global photos
-        searchq = []
-        links = []
-        photos = []
-        global results_counter
+        global searchq, links, photos, results_counter 
+        searchq, links, photos = ([] for i in range(3))
         results_counter = len(parsed_json['response']['sections'][1]['hits'])
         for x in range(results_counter):
             link = parsed_json['response']['sections'][1]['hits'][x]['result']['url']
@@ -57,14 +50,45 @@ def first_page(name):
             searchq.append(info)
             photos.append(photo)
         
+        #Serch kb:
+        markup = types.InlineKeyboardMarkup()
+        ar_button = types.InlineKeyboardButton(text='ابحث عن أغانٍ عربية', callback_data='ar_result')
+        close_button = types.InlineKeyboardButton(text='Close', callback_data='result_no')
+        nmarkup = types.InlineKeyboardMarkup([[ar_button], [close_button]])
+        count = 0
+        for value in searchq:
+            markup.add(types.InlineKeyboardButton(text=value,callback_data='result'+str(count)))
+            count += 1
+        markup.add(ar_button)
+        markup.add(close_button)
+
     else:
         return "Sorry, server error :)"
+    
+    return markup, nmarkup
 
 def second_page(link):
     #second page (Entering the link):
     r1 = requests.get(link, headers=headers)
     if r1.status_code == 200:
         soup1 = bs(r1.content, features='html.parser')
+
+        #Lyrics
+        try:
+            lyrics_raw = soup1.find("div", class_="PageGriddesktop-a6v82w-0 SongPageGriddesktop-sc-1px5b71-0 Lyrics__Root-sc-1ynbvzw-0 UljRP")
+            lyrics_raw.find("div", class_="LyricsHeader__Container-ejidji-1 eOUfVo").decompose()
+            lyrics_raw.find("div", class_="Lyrics__Footer-sc-1ynbvzw-1 jOTQyT").decompose()
+            try:
+                lyrics_raw.find("aside", class_="RecommendedSongs__Container-fhtuij-0 fUyrrM Lyrics__Recommendations-sc-1ynbvzw-17 glqGdw").decompose()
+            except:
+                pass
+        except:
+            if lyrics_raw == None:
+                lyrics_raw = soup1.find('div', 'LyricsPlaceholder__Message-uen8er-3 jlYyFx')
+        lyrics_fixed = str(lyrics_raw).replace('<br/>', '\n')
+        convert = bs(lyrics_fixed, features='html.parser')
+        lyrics = convert.text
+
         #About the song:
         global about 
         try:
@@ -87,25 +111,10 @@ def second_page(link):
         except:
             album = 'Sorry, couldn\'t find data.'
 
-        #Lyrics
-        try:
-            lyrics_raw = soup1.find("div", class_="PageGriddesktop-a6v82w-0 SongPageGriddesktop-sc-1px5b71-0 Lyrics__Root-sc-1ynbvzw-0 UljRP")
-            lyrics_raw.find("div", class_="LyricsHeader__Container-ejidji-1 eOUfVo").decompose()
-            lyrics_raw.find("div", class_="Lyrics__Footer-sc-1ynbvzw-1 jOTQyT").decompose()
-            try:
-                lyrics_raw.find("aside", class_="RecommendedSongs__Container-fhtuij-0 fUyrrM Lyrics__Recommendations-sc-1ynbvzw-17 glqGdw").decompose()
-            except:
-                pass
-        except:
-            if lyrics_raw == None:
-                lyrics_raw = soup1.find('div', 'LyricsPlaceholder__Message-uen8er-3 jlYyFx')
-        lyrics_fixed = str(lyrics_raw).replace('<br/>', '\n')
-        convert = bs(lyrics_fixed, features='html.parser')
-        lyrics = convert.text
-        file.append(lyrics)
-
     else:
         return "Sorry, Server error :)"
+    
+    return lyrics
 
 def AR(url_ar):
     r_ar = requests.post(url_ar, headers=headers_ar)
@@ -127,9 +136,7 @@ def AR(url_ar):
             ar_counter -= 1
         
     global songIds, infos_ar, picIds
-    songIds = []
-    infos_ar = []
-    picIds = []
+    songIds, infos_ar, picIds= ([] for i in range(3))
     if ar_counter != 0:
         for x in range(ar_counter+1):
             try:
@@ -174,7 +181,15 @@ def tbot():
         name = message.text
         global name_ar
         name_ar = message.text
-        first_page(name)
+        markup, nmarkup = first_page(name)
+
+        #Sending searchq:
+        if results_counter != 0:
+            bot.reply_to(message, 'Choose your song:', reply_markup=markup)
+        else:
+            bot.reply_to(message, 'Sorry, no matches.', reply_markup=nmarkup)
+        
+        #Sending data:
         userId = message.chat.id
         nameUser = str(message.chat.first_name) + ' ' + str(message.chat.last_name)
         username = message.chat.username
@@ -182,38 +197,48 @@ def tbot():
         date = datetime.now()
         data = f'User id: {userId}\nUsermae: {username}\nName: {nameUser}\nText: {text}\nDate: {date}'
         bot.send_message(chat_id=CHATID, text=data)
-        #Serch kb:
-        markup = types.InlineKeyboardMarkup()
-        close_button = types.InlineKeyboardButton(text='Close', callback_data='result_no')
-        ar_button = types.InlineKeyboardButton(text='ابحث عن أغانٍ عربية', callback_data='ar_result')
-        nmarkup = types.InlineKeyboardMarkup([[ar_button], [close_button]])
-        count = 0
-        for value in searchq:
-            markup.add(types.InlineKeyboardButton(text=value,callback_data='result'+str(count)))
-            count += 1
-        markup.add(ar_button)
-        markup.add(close_button)
-
-        #More info kb:
-        global keyboard
-        button0 = types.InlineKeyboardButton(text='About the song', callback_data='click0')
-        button1 = types.InlineKeyboardButton(text='Album tracklist', callback_data='click1')
-        button2 = types.InlineKeyboardButton(text='Translation (beta)', callback_data='click2')
-        button3 = types.InlineKeyboardButton(text='Done', callback_data='click3')
-        keyboard = types.InlineKeyboardMarkup([[button0, button1, button2], [button3]])
-        global long_keyboard
-        long_keyboard = types.InlineKeyboardMarkup()
-        long_keyboard.add(button0, button1, button3)
-        if results_counter != 0:
-            bot.reply_to(message, 'Choose your song:', reply_markup=markup)
-        else:
-            bot.reply_to(message, 'Sorry, no matches.', reply_markup=nmarkup)
 
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback_data(call):
         if call.message:
+            if call.data == 'result_no':
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
             call_data = call.data
+
+            if call.data == 'result' + call_data[-1]:
+                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                bot.send_chat_action(call.message.chat.id, action='typing')
+
+                #More info kb:
+                global keyboard
+                button0 = types.InlineKeyboardButton(text='About the song', callback_data='click0')
+                button1 = types.InlineKeyboardButton(text='Album tracklist', callback_data='click1')
+                button2 = types.InlineKeyboardButton(text='Translation (beta)', callback_data='click2')
+                button3 = types.InlineKeyboardButton(text='Done', callback_data='click_done')
+                keyboard = types.InlineKeyboardMarkup([[button0, button1, button2], [button3]])
+                long_keyboard = types.InlineKeyboardMarkup()
+                long_keyboard.add(button0, button1, button3)
+
+                call_num = int(call_data[-1])
+                lyrics = second_page(links[call_num])
+                global lyricsfr
+                lyricsfr = searchq[call_num] + ' | Lyrics:\n\n' + lyrics
+                bot.send_photo(chat_id=call.message.chat.id, photo=photos[call_num])
+                if len(lyricsfr) > 4096:
+                    for x in range(0, len(lyricsfr), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=lyricsfr[x:x+4096])
+                    bot.send_message(chat_id=call.message.chat.id, text="More stuff to see:\n\n", reply_markup=long_keyboard)
+                else:
+                    bot.send_message(chat_id=call.message.chat.id, text=lyricsfr, reply_markup=keyboard)
+
+            if call.data == 'click_done':
+                if len(lyricsfr) > 4096:
+                    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+                else:
+                    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=lyricsfr)
+
             if call.data == 'ar_result':
                 bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
                 bot.send_chat_action(call.message.chat.id, action='typing')
@@ -242,25 +267,6 @@ def tbot():
                 else:
                     bot.send_message(chat_id=call.message.chat.id, text=ar_lyrics)
             
-
-            global lyricsfr
-            if call.data == 'result_no':
-                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-            if call.data == 'result' + call_data[-1]:
-                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-                bot.send_chat_action(call.message.chat.id, action='typing')
-                call_num = int(call_data[-1])
-                second_page(links[call_num])
-                file.insert(0, searchq[call_num] + ' | Lyrics:\n\n')
-                lyricsfr = "".join(line for line in file)
-                file.clear()
-                bot.send_photo(chat_id=call.message.chat.id, photo=photos[0])
-                if len(lyricsfr) > 4096:
-                    for x in range(0, len(lyricsfr), 4096):
-                        bot.send_message(chat_id=call.message.chat.id, text=lyricsfr[x:x+4096])
-                    bot.send_message(chat_id=call.message.chat.id, text="More stuff to see:\n\n", reply_markup=long_keyboard)
-                else:
-                    bot.send_message(chat_id=call.message.chat.id, text=lyricsfr, reply_markup=keyboard)
             
             if call.data == 'click0':
                 bot.send_chat_action(call.message.chat.id, action='typing')
@@ -296,11 +302,6 @@ def tbot():
                 bot.send_message(chat_id=call.message.chat.id, text="Spanish translation:\n\n" + es)
             if call.data == 'click2_0':
                 bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=lyricsfr, reply_markup=keyboard)
-            if call.data == 'click3':
-                if len(lyricsfr) > 4096:
-                    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-                else:
-                    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=lyricsfr)
     print('Bot is running...')
     bot.infinity_polling()
 
