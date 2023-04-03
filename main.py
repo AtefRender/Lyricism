@@ -206,7 +206,8 @@ def tbot():
                 bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
             call_data = call.data
-
+            
+            global lyricsfr
             if call.data == 'result' + call_data[-1]:
                 bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
                 bot.send_chat_action(call.message.chat.id, action='typing')
@@ -223,7 +224,6 @@ def tbot():
 
                 call_num = int(call_data[-1])
                 lyrics = second_page(links[call_num])
-                global lyricsfr
                 lyricsfr = searchq[call_num] + ' | Lyrics:\n\n' + lyrics
                 bot.send_photo(chat_id=call.message.chat.id, photo=photos[call_num])
                 if len(lyricsfr) > 4096:
