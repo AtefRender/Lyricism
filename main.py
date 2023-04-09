@@ -179,7 +179,7 @@ def tbot():
      @bot.message_handler(commands=['contact'])
     def start(message):
         bot.send_chat_action(message.chat.id, action='typing')
-        smsg = "Contact bot craetor to report a bug or add a feature:\n@TheAtef\nhttps://t.me/TheAtef"
+        smsg = "Contact bot craetor to report a bug or suggest a feature:\n@TheAtef\nhttps://t.me/TheAtef"
         bot.reply_to(message, smsg)
 
     @bot.message_handler(commands=['donate'])
