@@ -80,7 +80,7 @@ def second_page(link):
             lyrics_raw.find("div", class_="LyricsHeader__Container-ejidji-1 eOUfVo").decompose()
             lyrics_raw.find("div", class_="Lyrics__Footer-sc-1ynbvzw-1 jOTQyT").decompose()
             try:
-                lyrics_raw.find("aside", class_="RecommendedSongs__Container-fhtuij-0 fUyrrM Lyrics__Recommendations-sc-1ynbvzw-17 glqGdw").decompose()
+                lyrics_raw.find("aside", class_="RecommendedSongs__Container-fhtuij-0 fUyrrM Lyrics__Recommendations-sc-1ynbvzw-16 dtNvkO").decompose()
             except:
                 pass
         except:
