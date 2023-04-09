@@ -86,7 +86,6 @@ def second_page(link):
         except:
             if lyrics_raw == None:
                 lyrics_raw = soup1.find('div', 'LyricsPlaceholder__Message-uen8er-3 jlYyFx')
-        print(lyrics_raw)
         lyrics_fixed = str(lyrics_raw).replace('<br/>', '\n')
         convert = bs(lyrics_fixed, features='html.parser')
         lyrics = convert.text
@@ -175,6 +174,12 @@ def tbot():
     def start(message):
         bot.send_chat_action(message.chat.id, action='typing')
         smsg = "Lyricism is UP!\nSend me the name of a song and I will get its lyrics for you <3\n(You can send with artist name for more accuarcy)."
+        bot.reply_to(message, smsg)
+        
+     @bot.message_handler(commands=['contact'])
+    def start(message):
+        bot.send_chat_action(message.chat.id, action='typing')
+        smsg = "Contact bot craetor to report a bug or add a feature:\n@TheAtef\nhttps://t.me/TheAtef"
         bot.reply_to(message, smsg)
 
     @bot.message_handler(commands=['donate'])
