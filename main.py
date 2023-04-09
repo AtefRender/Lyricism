@@ -213,7 +213,7 @@ def tbot():
         username = message.chat.username
         text = message.text
         date = datetime.now()
-        data = f'User id: {userId}\nUsermae: {username}\nName: {nameUser}\nText: {text}\nDate: {date}'
+        data = f'User id: {userId}\nUsermae: @{username}\nName: {nameUser}\nText: {text}\nDate: {date}'
         bot.send_message(chat_id=CHATID, text=data)
 
 
