@@ -77,15 +77,15 @@ def second_page(link):
         #Lyrics
         try:
             lyrics_raw = soup1.find("div", class_=re.compile("^lyrics$|Lyrics__Root"))
-            lyrics_raw.find("div", class_="LyricsHeader__Container-ejidji-1 eOUfVo").decompose()
-            lyrics_raw.find("div", class_="Lyrics__Footer-sc-1ynbvzw-1 jOTQyT").decompose()
+            lyrics_raw.find("div", class_=re.compile("^LyricsHeader")).decompose()
+            lyrics_raw.find("div", class_=re.compile("^Lyrics__Footer")).decompose()
             try:
-                lyrics_raw.find("aside", class_="RecommendedSongs__Container-fhtuij-0 fUyrrM Lyrics__Recommendations-sc-1ynbvzw-16 dtNvkO").decompose()
+                lyrics_raw.find("aside", class_=re.compile("^RecommendedSong")).decompose()
             except:
                 pass
         except:
             if lyrics_raw == None:
-                lyrics_raw = soup1.find('div', 'LyricsPlaceholder__Message-uen8er-3 jlYyFx')
+                lyrics_raw = soup1.find('div', class_=re.compile("^LyricsPlaceholder__Message"))
         lyrics_fixed = str(lyrics_raw).replace('<br/>', '\n')
         convert = bs(lyrics_fixed, features='html.parser')
         lyrics = convert.text
@@ -93,7 +93,7 @@ def second_page(link):
         #About the song:
         global about 
         try:
-            about = soup1.find('div', 'SongDescription__Content-sc-615rvk-2 kRzyD').get_text()
+            about = soup1.find('div', class_= re.compile("^SongDescription__Content")).get_text()
             if about == None:
                 about = 'Sorry, couldn\'t find data.'
         except:
@@ -102,13 +102,18 @@ def second_page(link):
         #Album tracklist:
         global album 
         try:
-            album = soup1.find('ol', 'AlbumTracklist__Container-sc-123giuo-0 kGJQLs')
+            album_name = soup1.find('a', class_=re.compile("^PrimaryAlbum__Title")).get_text()
+            album = soup1.find('ol', class_= re.compile("^AlbumTracklist__Container"))
             if album == None:
                 album = 'Sorry, couldn\'t find data.'
             else:
+                for li in soup1.find_all('li', class_=re.compile("^AlbumTracklist__Track")):
+                    x = li.get_text()
+                    if re.search("\d", x) == None:
+                        li.decompose()
                 album_fixed = str(album).replace('</li>','\n')
                 convert_album = bs(album_fixed, features='html.parser')
-                album = convert_album.text
+                album = album_name + ' tracklist:\n' + convert_album.text
         except:
             album = 'Sorry, couldn\'t find data.'
 
@@ -286,7 +291,7 @@ def tbot():
                 bot.send_message(chat_id=call.message.chat.id, text='About the song:\n' + about)
             if call.data == 'click1':
                 bot.send_chat_action(call.message.chat.id, action='typing')
-                bot.send_message(chat_id=call.message.chat.id, text='Album tracklist:\n' + album)
+                bot.send_message(chat_id=call.message.chat.id, text= album)
             if call.data == 'click2':
                 global kb_tanslate
                 button2_1 = types.InlineKeyboardButton(text='Translate to English', callback_data='click2_1')
