@@ -169,9 +169,9 @@ def AR1(sId, pId, infos):
     ar_lyrics_req = requests.get(lyrics_url, headers=headers)
     soup_ar = bs(ar_lyrics_req.content, 'html.parser')
     try:
-        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('pre', class_='lyrics-body_lyrics_body_container__e_Gwj').text
+        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('pre', class_=re.compile("^lyrics-body")).text
     except:
-        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('h4', class_='error-page_error_page_subtitle__3REFJ').text
+        ar_lryics = infos + ' | كلمات:\n\n' + soup_ar.find('h4', class_=re.compile("^error-page")).text
     return ar_lryics, pic_url
 
 def tbot():
