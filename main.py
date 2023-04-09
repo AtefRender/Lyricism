@@ -176,14 +176,14 @@ def tbot():
         smsg = "Lyricism is UP!\nSend me the name of a song and I will get its lyrics for you <3\n(You can send with artist name for more accuarcy)."
         bot.reply_to(message, smsg)
         
-     @bot.message_handler(commands=['contact'])
-    def start(message):
+    @bot.message_handler(commands=['contact'])
+    def contact(message):
         bot.send_chat_action(message.chat.id, action='typing')
         smsg = "Contact bot craetor to report a bug or suggest a feature:\n@TheAtef\nhttps://t.me/TheAtef"
         bot.reply_to(message, smsg)
 
     @bot.message_handler(commands=['donate'])
-    def start(message):
+    def donate(message):
         bot.send_chat_action(message.chat.id, action='typing')
         smsg = "Thanks for consedring donating!\nHere is my Buy Me a Coffee link:\nhttps://www.buymeacoffee.com/TheAtef"
         bot.reply_to(message, smsg)
