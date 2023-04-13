@@ -319,12 +319,12 @@ def tbot():
                 bot.send_chat_action(call.message.chat.id, action='typing')
                 a = int(call_data[5:]) - 1
                 lyrics = get_lyrics(y[a])
-                lyricsfr = n[a] + ' | Lyrics:\n\n' + lyrics
-                if len(lyricsfr) > 4096:
-                    for x in range(0, len(lyricsfr), 4096):
-                        bot.send_message(chat_id=call.message.chat.id, text=lyricsfr[x:x+4096])
+                lyrics_alb = n[a] + ' | Lyrics:\n\n' + lyrics
+                if len(lyrics_alb) > 4096:
+                    for x in range(0, len(lyrics_alb), 4096):
+                        bot.send_message(chat_id=call.message.chat.id, text=lyrics_alb[x:x+4096])
                 else:
-                    bot.send_message(chat_id=call.message.chat.id, text=lyricsfr)
+                    bot.send_message(chat_id=call.message.chat.id, text=lyrics_alb)
 
             if call.data == 'click2':
                 global kb_tanslate
